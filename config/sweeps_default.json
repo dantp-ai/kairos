@@ -1,0 +1,15 @@
+[
+  {
+    "C": 2000,
+    "E": 10,
+    "M": 32,
+    "N": 32,
+    "batch_size": 512,
+    "T": 2000,
+    "checkpoint": 10000,
+    "constrained": false,
+    "epsilon": 0.2,
+    "num_steps": 500000,
+    "out_dir": ""
+  }
+]

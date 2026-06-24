@@ -16,6 +16,46 @@ is what makes `c₂` actually affect performance. With the data-drop in place, a
 burst learns on only `T − ⌊L/τ⌋` of the `T` samples gathered since the last
 burst (see `train_ppo.py`).
 
+## Results
+
+*Mean ± 95% bootstrap CI over **30 seeds** per configuration. Regenerate the
+per-series figures and significance tables with `bash make_figures.sh`, and the
+cross-environment summary with `uv run python summary_figure.py`.*
+
+**More computational power → faster, more stable learning.** On CartPole-v1,
+giving `c₂` more gradient work per real-time budget monotonically speeds up
+learning *and* shrinks seed variance, approaching the unconstrained ceiling:
+
+![Series A — CartPole](assets/seriesA_cartpole.png)
+
+| `c₂` (E) | median steps to solve (≥475) | seed std of final return |
+|---|---|---|
+| 1 (E=5)  | 127.5k *(53% of seeds solve)* | 73.0 |
+| 2 (E=10) | 85k  | 5.8 |
+| 4 (E=20) | 50k  | 0.8 |
+| 8 (E=40) | 40k  | 0.0 |
+| unconstrained | 30k | 0.0 |
+
+The effect holds across tasks but **diminishes past `c₂≈4`** — and on the harder
+Acrobot-v1 the largest budget brings no further speed-up and even starts to
+destabilize (`c₂=8` leaves ~1 seed unsolved):
+
+![Compute vs steps-to-solve](assets/summary_compute.png)
+
+**How should a fixed budget be spent — more epochs, or more data?** On CartPole
+it doesn't matter (everything saturates). On Acrobot it does, and the lesson is
+*don't over-cycle a small batch*: the most-epochs / least-data split (`M=2`) is
+never best and is clearly worst at the larger budget, while more data per update
+(`M=10`) wins there. AUC = mean return over training (higher is better):
+
+| budget | `M=10` (more data, fewer epochs) | `M=5` | `M=2` (less data, more epochs) |
+|---|---|---|---|
+| `c₂=2` (M·E=50)  | −144 | **−130** | −144 |
+| `c₂=4` (M·E=100) | **−125** | −125 | −134 |
+
+*(Final returns converge across the constrained configs — all eventually solve —
+so the signal is in learning speed / AUC, not final return.)*
+
 ## Setup (uv + Python 3.12)
 
 ```bash

@@ -1,0 +1,62 @@
+[
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/baseline",
+    "constrained": false,
+    "C": 2000,
+    "T": 2000,
+    "batch_size": 100,
+    "E": 10,
+    "epsilon": 0.2,
+    "num_steps": 150000,
+    "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_2_m10",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 10, "E": 5, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_2_m5",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_2_m2",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 2, "E": 25, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_4_m10",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 10, "E": 10, "c": 0.1, "tau": 40, "c2": 4,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_4_m5",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 5, "E": 20, "c": 0.1, "tau": 40, "c2": 4,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  },
+  {
+    "env_name": "CartPole-v1",
+    "out_dir": "seriesB_cartpole/c2_4_m2",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 2, "E": 50, "c": 0.1, "tau": 40, "c2": 4,
+    "epsilon": 0.2, "num_steps": 150000, "checkpoint": 5000
+  }
+]
