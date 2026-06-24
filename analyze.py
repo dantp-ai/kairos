@@ -7,20 +7,22 @@ c2_1,c2_2,...}``. Each configuration directory holds one ``{seed}.txt`` per run
 ``stats.txt`` (the JSON config) used for nicer legend labels.
 
 Produces, for the whole series:
-  * an overlaid learning-curve plot with mean +/- 95% bootstrap CI bands and the
-    unconstrained baseline drawn as a dashed black ceiling line;
+  * an overlaid learning-curve plot — mean + 95% bootstrap CI band by default,
+    or median + interquartile band with ``--robust`` (cleaner when a few seeds
+    diverge) — with the unconstrained baseline as a dashed black ceiling line;
   * a summary table (final return, AUC, steps-to-threshold, cross-seed std);
   * a matrix of pairwise Welch t-test p-values on the per-seed final return.
 
 Example:
-    uv run python analyze.py results/seriesA_cartpole \
-        --title "Series A - CartPole" --threshold 475 \
-        --save results/figures/seriesA_cartpole.png
+    uv run python analyze.py results/seriesA_acrobot \
+        --title "Series A - Acrobot" --threshold -100 --robust \
+        --save results/figures/seriesA_acrobot.png
 """
 
 import argparse
 import json
 import os
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,24 +68,43 @@ def label_for(run_dir, name):
     return name
 
 
-def bootstrap_ci(ys, n_resamples=2000, ci=0.95, seed=0):
-    """Per-checkpoint mean and bootstrap CI across seeds.
+def band(ys, robust=False, n_resamples=2000, ci=0.95, seed=0):
+    """Central curve + shaded interval across seeds, per checkpoint.
 
-    ``ys``: (n_seeds, n_checkpoints). Returns (mean, lo, hi), each (n_checkpoints,).
+    ``ys``: (n_seeds, n_checkpoints). Returns ``(center, lo, hi)``.
+
+    * default    -> mean + bootstrap percentile CI;
+    * ``robust`` -> median + interquartile (25-75) band, which is far cleaner
+      than a bootstrap CI when a few seeds diverge (e.g. on Acrobot).
     """
+    if robust:
+        return (
+            np.median(ys, axis=0),
+            np.percentile(ys, 25, axis=0),
+            np.percentile(ys, 75, axis=0),
+        )
     mean = ys.mean(axis=0)
     if ys.shape[0] < 3:  # too few seeds to bootstrap meaningfully
         return mean, mean, mean
-    rng = np.random.default_rng(seed)
-    res = stats.bootstrap(
-        (ys,),
-        np.mean,
-        axis=0,
-        n_resamples=n_resamples,
-        confidence_level=ci,
-        random_state=rng,
-    )
-    return mean, res.confidence_interval.low, res.confidence_interval.high
+    with warnings.catch_warnings():
+        # Saturated configs (e.g. every seed at 500) are zero-variance; the
+        # percentile method handles them gracefully and we silence the
+        # residual numerical notices rather than spam the console.
+        warnings.simplefilter("ignore")
+        res = stats.bootstrap(
+            (ys,),
+            np.mean,
+            axis=0,
+            n_resamples=n_resamples,
+            confidence_level=ci,
+            method="percentile",
+            random_state=np.random.default_rng(seed),
+        )
+    lo, hi = res.confidence_interval.low, res.confidence_interval.high
+    # Degenerate (zero-variance) checkpoints -> collapse the band onto the mean.
+    lo = np.where(np.isfinite(lo), lo, mean)
+    hi = np.where(np.isfinite(hi), hi, mean)
+    return mean, lo, hi
 
 
 def final_return_per_seed(ys, frac=0.1):
@@ -111,7 +132,11 @@ def steps_to_threshold(xs, ys, threshold):
     return np.array(out)
 
 
-def fmt_ci(vals):
+def fmt_center(vals, robust=False):
+    """Format center [interval]: median [IQR] if robust, else mean [95% CI]."""
+    if robust:
+        med, lo, hi = np.nanpercentile(vals, [50, 25, 75])
+        return f"{med:8.1f} [{lo:7.1f}, {hi:7.1f}]"
     m = np.nanmean(vals)
     if len(vals) >= 3:
         lo, hi = np.nanpercentile(vals, [2.5, 97.5])
@@ -132,6 +157,12 @@ def main():
     parser.add_argument("--xlabel", default="Environment steps")
     parser.add_argument(
         "--ylabel", default="Average episodic return (per checkpoint)"
+    )
+    parser.add_argument(
+        "--robust",
+        action="store_true",
+        help="Plot median + interquartile band (and report median) instead of "
+        "mean + bootstrap CI. Cleaner when a few seeds diverge (e.g. Acrobot).",
     )
     parser.add_argument("--save", default=None, help="Output PNG path.")
     parser.add_argument("--dpi", type=int, default=140)
@@ -156,6 +187,7 @@ def main():
         raise SystemExit(f"No run data found under {args.series_dir}")
 
     # ---- Plot -----------------------------------------------------------
+    band_desc = "median +/- IQR (25-75)" if args.robust else "mean +/- 95% bootstrap CI"
     fig, ax = plt.subplots(figsize=(9, 6))
     cmap = plt.get_cmap("viridis")
     constrained = [n for n in runs if n != "baseline"]
@@ -163,12 +195,12 @@ def main():
 
     for name, (xs, ys) in runs.items():
         label = label_for(os.path.join(args.series_dir, name), name)
-        mean, lo, hi = bootstrap_ci(ys)
+        center, lo, hi = band(ys, robust=args.robust)
         if name == "baseline":
-            ax.plot(xs, mean, color="black", ls="--", lw=2,
+            ax.plot(xs, center, color="black", ls="--", lw=2,
                     label=f"{label} [ceiling]", zorder=10)
         else:
-            ax.plot(xs, mean, color=colors[name], lw=2, label=label)
+            ax.plot(xs, center, color=colors[name], lw=2, label=label)
             ax.fill_between(xs, lo, hi, color=colors[name], alpha=0.18)
 
     if args.threshold is not None:
@@ -178,6 +210,8 @@ def main():
     ax.set_xlabel(args.xlabel)
     ax.set_ylabel(args.ylabel)
     ax.legend(fontsize=8, loc="best")
+    ax.text(0.99, 0.01, f"shaded: {band_desc}", transform=ax.transAxes,
+            ha="right", va="bottom", fontsize=7, color="grey")
     fig.tight_layout()
 
     if args.save:
@@ -188,7 +222,9 @@ def main():
     # ---- Summary table --------------------------------------------------
     n_seeds = {n: ys.shape[0] for n, (xs, ys) in runs.items()}
     print(f"\n=== Summary: {args.series_dir} (seeds: {n_seeds}) ===")
-    header = f"{'config':14s} {'final return [95% CI]':30s} {'AUC':10s} {'std':7s}"
+    center_label = "median [IQR]" if args.robust else "mean [95% CI]"
+    auc_center = np.median if args.robust else np.mean
+    header = f"{'config':14s} {('final return ' + center_label):30s} {'AUC':10s} {'std':7s}"
     if args.threshold is not None:
         header += f" {'steps@thr (median, %solved)':28s}"
     print(header)
@@ -197,7 +233,7 @@ def main():
         fr = final_return_per_seed(ys)
         finals[name] = fr
         auc = auc_per_seed(xs, ys)
-        line = f"{name:14s} {fmt_ci(fr):30s} {np.mean(auc):8.1f}  {np.std(fr):6.1f}"
+        line = f"{name:14s} {fmt_center(fr, args.robust):30s} {auc_center(auc):8.1f}  {np.std(fr):6.1f}"
         if args.threshold is not None:
             s = steps_to_threshold(xs, ys, args.threshold)
             pct = 100 * np.mean(~np.isnan(s))
@@ -210,15 +246,19 @@ def main():
     if len(names) > 1 and min(n_seeds.values()) >= 2:
         print("\nPairwise Welch t-test p-values (per-seed final return):")
         print(" " * 14 + "".join(f"{n[:12]:>13s}" for n in names))
-        for a in names:
-            row = f"{a:14s}"
-            for b in names:
-                if a == b:
-                    row += f"{'-':>13s}"
-                else:
-                    p = stats.ttest_ind(finals[a], finals[b], equal_var=False).pvalue
-                    row += f"{p:13.3f}"
-            print(row)
+        with warnings.catch_warnings():
+            # Saturated configs are near-identical -> harmless precision-loss
+            # notices from the t-test; the resulting p-values are still valid.
+            warnings.simplefilter("ignore")
+            for a in names:
+                row = f"{a:14s}"
+                for b in names:
+                    if a == b:
+                        row += f"{'-':>13s}"
+                    else:
+                        p = stats.ttest_ind(finals[a], finals[b], equal_var=False).pvalue
+                        row += f"{p:13.3f}"
+                print(row)
 
     plt.close(fig)
 
