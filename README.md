@@ -29,7 +29,7 @@ The env doesn't pause, so the agent must keep acting during that window, and two
 1. **Stale policy:** The new parameters aren't deployed until the burst finishes (at step `t + ⌊L/τ⌋`); until then the agent acts on the old policy.
 2. **Dropped experience:** The samples gathered while the learner is busy can't be used by it, so they are discarded.
 
-Modelling **#2** (not just #1) is what makes `c₂` crucial here: each burst learns on only `T − ⌊L/τ⌋` of the `T` samples gathered since the last update. More power → smaller busy window → less wasted experience (see `train_ppo.py`).
+For #2, `c₂` is quite relevant because each burst learns on only `T − ⌊L/τ⌋` of the `T` samples gathered since the last update. So, more power → smaller busy window → less wasted experience (see `train_ppo.py`).
 
 ## Results
 
