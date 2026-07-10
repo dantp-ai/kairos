@@ -58,6 +58,21 @@ On the harder Acrobot-v1 every budget eventually solves and the largest one (`c�
 On CartPole it doesn't matter - everything saturates.
 On Acrobot the typical run is also insensitive to the split, but pushing the budget into many epochs over a tiny batch (`M=2`, up to `E=50`) raises instability: ~1 in 30 seeds diverges, versus 100% solved for balanced splits.
 
+**Is it the compute, or the fresher data?**
+Series C isolates the real-time penalty: it fixes the gradient work (`M·E = 25`) and sweeps `c₂`, so only the busy window changes (50% → 6% dropped) while the amount of learning stays constant.
+Shrinking the window alone buys almost nothing.
+On CartPole every constrained budget plateaus around 120-127k steps with high seed variance, versus Series A's 40-85k at matched `c₂` - so Series A's speedup comes from the extra epochs, not from fresher, less-dropped experience.
+Acrobot shows the same flatness (all `c₂` ≈ -84 median). The `c₂=1` point is shared with Series A and matches exactly.
+
+![Series C - CartPole](assets/seriesC_cartpole.png)
+
+| `c₂` (busy window) | Series A steps@solve (%solved) | Series C steps@solve (%solved) |
+|---|---|---|
+| 1 (50% dropped)   | 127.5k (53%) | 127.5k (53%) |
+| 2 (25% dropped)   | 85k (100%)   | 125k (93%) |
+| 4 (12.5% dropped) | 50k (100%)   | 120k (70%) |
+| 8 (6% dropped)    | 40k (100%)   | 125k (77%) |
+
 ## Setup (uv + Python 3.12)
 
 ```bash
