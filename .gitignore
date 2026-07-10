@@ -17,8 +17,10 @@ venv.bak/
 # macOS
 .DS_Store
 
-# Experiment outputs / data
+# Experiment outputs / data (per-experiment configs + READMEs stay tracked)
 data/
-experiments/
+experiments/**/results/
+experiments/**/figures/
+archive/
 results/
 docs/
