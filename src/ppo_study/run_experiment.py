@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-import train_ppo
+from ppo_study import train_ppo
 
 
 def create_experiment_dir(root_dir, exp_name):

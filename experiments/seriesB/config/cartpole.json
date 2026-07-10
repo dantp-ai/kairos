@@ -1,7 +1,7 @@
 [
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/baseline",
+    "out_dir": "baseline",
     "constrained": false,
     "C": 2000,
     "T": 2000,
@@ -13,7 +13,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_2_m10",
+    "out_dir": "c2_2_m10",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 10, "E": 5, "c": 0.1, "tau": 40, "c2": 2,
@@ -21,7 +21,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_2_m5",
+    "out_dir": "c2_2_m5",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
@@ -29,7 +29,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_2_m2",
+    "out_dir": "c2_2_m2",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 2, "E": 25, "c": 0.1, "tau": 40, "c2": 2,
@@ -37,7 +37,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_4_m10",
+    "out_dir": "c2_4_m10",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 10, "E": 10, "c": 0.1, "tau": 40, "c2": 4,
@@ -45,7 +45,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_4_m5",
+    "out_dir": "c2_4_m5",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 5, "E": 20, "c": 0.1, "tau": 40, "c2": 4,
@@ -53,7 +53,7 @@
   },
   {
     "env_name": "CartPole-v1",
-    "out_dir": "seriesB_cartpole/c2_4_m2",
+    "out_dir": "c2_4_m2",
     "constrained": true,
     "C": 2000, "T": 2000, "batch_size": 100,
     "M": 2, "E": 50, "c": 0.1, "tau": 40, "c2": 4,
