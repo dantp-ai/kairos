@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from model import PPO
+from ppo_study.model import PPO
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
