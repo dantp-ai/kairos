@@ -29,12 +29,12 @@ The env doesn't pause, so the agent must keep acting during that window, and two
 1. **Stale policy:** The new parameters aren't deployed until the burst finishes (at step `t + ⌊L/τ⌋`); until then the agent acts on the old policy.
 2. **Dropped experience:** The samples gathered while the learner is busy can't be used by it, so they are discarded.
 
-For #2, `c₂` is quite relevant because each burst learns on only `T − ⌊L/τ⌋` of the `T` samples gathered since the last update. So, more power → smaller busy window → less wasted experience (see `train_ppo.py`).
+For #2, `c₂` is quite relevant because each burst learns on only `T − ⌊L/τ⌋` of the `T` samples gathered since the last update. So, more power → smaller busy window → less wasted experience (see `src/ppo_study/train_ppo.py`).
 
 ## Results
 
 *CartPole: mean ± 95% bootstrap CI. Acrobot: median ± IQR (a few seeds diverge). 30 seeds each.
-Regenerate with `bash make_figures.sh` and `uv run python summary_figure.py`.*
+Regenerate with `bash make_figures.sh` and `uv run python -m ppo_study.summary_figure`.*
 
 **More compute → faster, more stable learning.**
 On CartPole-v1, giving `c₂` more gradient work (`M·E = 25·c₂`) speeds up learning and shrinks seed variance toward the unconstrained ceiling.
@@ -70,13 +70,16 @@ Prefix commands with `uv run` to use the environment.
 
 ```bash
 # one seeded run
-uv run python train_ppo.py --env-name CartPole-v1 --constrained \
+uv run python -m ppo_study.train_ppo --env-name CartPole-v1 --constrained \
     --C 2000 --T 2000 --batch-size 100 --M 5 --E 10 \
     --c 0.1 --tau 40 --c2 2 --num-steps 150000 --checkpoint 5000 --seed 0
 
-# a full sweep (one config dir per c₂ / allocation), then figures + tables
-for s in seriesA_cartpole seriesA_acrobot seriesB_cartpole seriesB_acrobot; do
-  uv run python run_experiment.py config/$s.json --n-runs 30 --n-proc 10 --root-dir results
+# a full sweep per experiment (writes into the experiment's own folder), then figures + tables
+for s in seriesA seriesB seriesC; do
+  for env in cartpole acrobot; do
+    uv run python -m ppo_study.run_experiment experiments/$s/config/$env.json \
+      --n-runs 30 --n-proc 10 --root-dir experiments/$s/results/$env
+  done
 done
 bash make_figures.sh
 ```
@@ -86,9 +89,10 @@ Re-running with more `--n-runs` reuses existing seeds and skips finished runs.
 
 ## Experiments
 
-All configs fix `C = T = 2000`, `batch_size = 100` (`N = 20`), `c = 0.1`, `τ = 40`, `ε = 0.2`, `γ = 0.99`, `λ = 0.95`, 2×64 tanh networks, and a constant 50% busy window (`⌊L/τ⌋ = 1000`).
+Each experiment lives in its own folder under `experiments/<series>/` (config, a README, and gitignored results). All fix `C = T = 2000`, `batch_size = 100` (`N = 20`), `c = 0.1`, `τ = 40`, `ε = 0.2`, `γ = 0.99`, `λ = 0.95`, and 2×64 tanh networks.
 
-- **Series A - does more power help?** Fix `M = 5` and scale work with compute: `M·E = 25·c₂` (`E = 5·c₂`), for `c₂ ∈ {1,2,4,8}`.
-- **Series B - epochs vs. data?** Keep the same budget `M·E = 25·c₂` and vary the split with `M ∈ {10,5,2}`, for `c₂ ∈ {2,4}`.
+- **Series A - does more power help?** Fix `M = 5` and scale work with compute: `M·E = 25·c₂` (`E = 5·c₂`), for `c₂ ∈ {1,2,4,8}`. Constant 50% busy window (`⌊L/τ⌋ = 1000`).
+- **Series B - epochs vs. data?** Keep the same budget `M·E = 25·c₂` and vary the split with `M ∈ {10,5,2}`, for `c₂ ∈ {2,4}`. Same constant busy window.
+- **Series C - staleness in isolation?** Fix work at `M = 5, E = 5` and sweep `c₂ ∈ {1,2,4,8}`, so the busy window *shrinks* (`⌊L/τ⌋ = ⌊1000/c₂⌋`: 50% → 6% dropped) while the amount of learning is held constant. The complement to Series A (they share the `c₂ = 1` point); see `experiments/seriesC/README.md`.
 
-Both include an unconstrained `baseline` (the ceiling), and Series A's `M=5` rows are Series B's middle column, so they form one grid. Configs live in `config/series{A,B}_{cartpole,acrobot}.json`.
+All include an unconstrained `baseline` (the ceiling), and Series A's `M=5` rows are Series B's middle column, so they form one grid. Configs live in `experiments/<series>/config/{cartpole,acrobot}.json`.
