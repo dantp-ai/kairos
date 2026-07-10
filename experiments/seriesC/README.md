@@ -1,7 +1,5 @@
 # Series C - staleness / data-drop sweep (`c₂` at fixed work)
 
-Tracks Linear issue **AET-34**.
-
 ## Impact variable
 
 Staleness / data-drop fraction: sweep `c₂` while holding gradient work fixed.
