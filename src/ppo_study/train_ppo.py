@@ -32,6 +32,7 @@ def run(
     E: int = 10,
     c: Optional[Union[float, None]] = None,
     tau: Optional[Union[int, None]] = None,
+    tau_ref: Optional[Union[int, None]] = None,
     c2: Optional[Union[int, None]] = None,
     epsilon: float = 0.2,
     gamma: float = 0.99,
@@ -58,6 +59,7 @@ def run(
     :param E: Number of epochs to train for during a update burst.
     :param c: Constraint 1 constant.
     :param tau: Constraint 2 constant.
+    :param tau_ref: Reference env-step time; when set, decouples burst compute-time from tau so a faster env yields a bigger busy window.
     :param c2: Constraint 2 constant.
     :param epsilon: PPO clipping parameter.
     :param gamma: Discount factor.
@@ -75,10 +77,14 @@ def run(
         # Assert constraints
         N = int(np.ceil(C / batch_size))
         H = 4 * (C / N) * M * E
-        L = H * (c * tau) / c2
-        assert (
-            H * (c * tau) / c2 <= tau * T
-        ), f"Constraint 2 failed with config: {c, tau, c2, T, E}."
+        if tau_ref is None:
+            L = H * (c * tau) / c2
+        else:
+            # Decoupled real-time cost: the burst's wall-clock compute time is set by a
+            # reference clock (tau_ref), not the env's own step time, so a faster
+            # environment (smaller tau) leaves a larger busy window.
+            L = H * (c * tau_ref) / c2
+        assert L <= tau * T, f"Constraint 2 failed with config: {c, tau, tau_ref, c2, T, E}."
         # Real-time data constraint (grader note #2): computing a burst takes L
         # wall-clock time = `busy_steps` environment steps, during which the
         # learner is occupied and cannot ingest the samples being collected. So
@@ -260,6 +266,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tau", type=int, default=None, help="Number of steps between actor updates."
+    )
+    parser.add_argument(
+        "--tau-ref",
+        dest="tau_ref",
+        type=int,
+        default=None,
+        help="Reference env-step time for the decoupled real-time cost model.",
     )
     parser.add_argument(
         "--c2", type=float, default=None, help="Learning rate for the learner."

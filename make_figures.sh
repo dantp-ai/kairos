@@ -28,3 +28,9 @@ run seriesB cartpole "Series B (epochs vs minibatches) - CartPole-v1"   475
 run seriesB acrobot  "Series B (epochs vs minibatches) - Acrobot-v1"   -100 --robust
 run seriesC cartpole "Series C (fixed work, busy window shrinks) - CartPole-v1"  475
 run seriesC acrobot  "Series C (fixed work, busy window shrinks) - Acrobot-v1"  -100 --robust
+run seriesD cartpole "Series D (update cadence T=C) - CartPole-v1"  475
+run seriesD acrobot  "Series D (update cadence T=C) - Acrobot-v1"  -100 --robust
+run seriesE cartpole "Series E (minibatch size at fixed compute) - CartPole-v1"  475
+run seriesE acrobot  "Series E (minibatch size at fixed compute) - Acrobot-v1"  -100 --robust
+run seriesF cartpole "Series F (environment speed tau) - CartPole-v1"  475
+run seriesF acrobot  "Series F (environment speed tau) - Acrobot-v1"  -100 --robust
