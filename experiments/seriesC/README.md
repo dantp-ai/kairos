@@ -31,6 +31,28 @@ Larger `c₂` gives modest gains in stability and steps-to-solve from the smalle
 Likely: on CartPole the effect is small (even 50% dropping is tolerable), while on data-hungry Acrobot reducing dropped experience matters more.
 If A's advantage over this series is large, it implies Series A's improvement is driven mainly by extra gradient work, not by the shrinking window.
 
+## Results
+
+30 seeds per config on both environments.
+Confirmed: with gradient work held fixed, shrinking the busy window (50% → 6% dropped) buys almost nothing.
+Every constrained budget plateaus far below the unconstrained ceiling, and the `c₂ = 1` point matches Series A exactly - so Series A's speedup comes from the extra epochs, not from fresher data.
+
+![Series C - CartPole](../../assets/seriesC_cartpole.png)
+![Series C - Acrobot](../../assets/seriesC_acrobot.png)
+
+CartPole, at matched `c₂` (Series C vs the Series A anchor, which scales work as `M·E = 25·c₂`):
+
+| `c₂` (busy window) | Series A steps@solve (%solved, std) | Series C steps@solve (%solved, std) |
+|---|---|---|
+| 1 (50% dropped)   | 127.5k (53%, 73) | 127.5k (53%, 73) |
+| 2 (25% dropped)   | 85k (100%, 5.8)  | 125k (93%, 32) |
+| 4 (12.5% dropped) | 50k (100%, 0.8)  | 120k (70%, 69) |
+| 8 (6% dropped)    | 40k (100%, 0.0)  | 125k (77%, 74) |
+
+Acrobot is flat across `c₂` (all ≈ -84.4 median return, ~90k steps to solve, 93-97% solved).
+
+The figures above are the tracked copies in `assets/`; the `analyze --save` step below writes the originals to the gitignored `figures/`, from where they are copied into `assets/` for embedding.
+
 ## Run
 
 ```bash
@@ -48,6 +70,10 @@ uv run python -m ppo_study.analyze experiments/seriesC/results/cartpole \
 uv run python -m ppo_study.analyze experiments/seriesC/results/acrobot \
     --title "Series C - Acrobot-v1" --threshold -100 --robust \
     --save experiments/seriesC/figures/acrobot.png
+
+# Copy the published figures into the tracked assets/ dir (embedded in Results above)
+cp experiments/seriesC/figures/cartpole.png assets/seriesC_cartpole.png
+cp experiments/seriesC/figures/acrobot.png  assets/seriesC_acrobot.png
 ```
 
 Outputs (`results/`, `figures/`) are gitignored; only `config/` and this README are tracked.
