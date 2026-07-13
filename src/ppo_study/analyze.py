@@ -51,21 +51,58 @@ def load_run_dir(run_dir):
     return xs, np.vstack(rows)
 
 
-def label_for(run_dir, name):
-    """Build a legend label, enriched from stats.txt when available."""
+def _load_cfg(run_dir):
+    """Return the stats.txt config dict for a run dir, or None."""
     stats_path = os.path.join(run_dir, "stats.txt")
     if os.path.isfile(stats_path):
         try:
-            cfg = json.load(open(stats_path))
-            if not cfg.get("constrained", False):
-                return f"{name} (unconstrained)"
-            return (
-                f"c2={cfg.get('c2')}, M={cfg.get('M')}, E={cfg.get('E')} "
-                f"(M*E={cfg.get('M') * cfg.get('E')})"
-            )
+            return json.load(open(stats_path))
         except Exception:
-            pass
-    return name
+            return None
+    return None
+
+
+# Config keys that are bookkeeping or held fixed across a series; never used to
+# distinguish curves in the legend.
+_NON_IMPACT_KEYS = {
+    "out_dir", "seed", "avg_time", "env_name", "constrained",
+    "num_steps", "checkpoint", "epsilon", "gamma", "lmbda",
+    "actor_step_size", "critic_step_size",
+    "n_actor_hidden_units", "n_critic_hidden_units", "to_log", "to_plot",
+}
+
+
+def impact_keys(cfgs):
+    """Config keys whose value differs across the constrained runs of a series.
+
+    These are the "impact variables" that distinguish curves, so the legend can
+    label each constrained run by exactly the parameters that vary: c2 for
+    Series A/C, C/T for the cadence sweep, batch_size for the minibatch sweep,
+    tau for the env-speed sweep, and so on. Returns an empty list when there is
+    nothing to disambiguate (caller then falls back to the c2/M/E summary).
+    """
+    constrained = [c for c in cfgs if c and c.get("constrained", False)]
+    if len(constrained) < 2:
+        return []
+    all_keys = set().union(*(c.keys() for c in constrained)) - _NON_IMPACT_KEYS
+    return [k for k in sorted(all_keys)
+            if len({c.get(k) for c in constrained}) > 1]
+
+
+def label_for(run_dir, name, keys=None):
+    """Build a legend label, enriched from stats.txt when available.
+
+    ``keys`` (from :func:`impact_keys`) selects which config parameters to show
+    for constrained runs; when empty, fall back to the c2/M/E summary.
+    """
+    cfg = _load_cfg(run_dir)
+    if cfg is None:
+        return name
+    if not cfg.get("constrained", False):
+        return f"{name} (unconstrained)"
+    if keys:
+        return ", ".join(f"{k}={cfg.get(k)}" for k in keys)
+    return f"c2={cfg.get('c2')}, M={cfg.get('M')}, E={cfg.get('E')}"
 
 
 def band(ys, robust=False, n_resamples=2000, ci=0.95, seed=0):
@@ -186,6 +223,12 @@ def main():
     if not runs:
         raise SystemExit(f"No run data found under {args.series_dir}")
 
+    # Legend labels: show exactly the config parameters that vary across the
+    # constrained runs (the impact variable), read from each run's stats.txt.
+    label_keys = impact_keys(
+        [_load_cfg(os.path.join(args.series_dir, name)) for name in runs]
+    )
+
     # ---- Plot -----------------------------------------------------------
     band_desc = "median +/- IQR (25-75)" if args.robust else "mean +/- 95% bootstrap CI"
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -194,7 +237,7 @@ def main():
     colors = {n: cmap(i / max(1, len(constrained) - 1)) for i, n in enumerate(constrained)}
 
     for name, (xs, ys) in runs.items():
-        label = label_for(os.path.join(args.series_dir, name), name)
+        label = label_for(os.path.join(args.series_dir, name), name, label_keys)
         center, lo, hi = band(ys, robust=args.robust)
         if name == "baseline":
             ax.plot(xs, center, color="black", ls="--", lw=2,
