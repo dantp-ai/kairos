@@ -1,0 +1,54 @@
+[
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "baseline",
+    "constrained": false,
+    "C": 2000,
+    "T": 2000,
+    "batch_size": 100,
+    "E": 10,
+    "epsilon": 0.2,
+    "num_steps": 300000,
+    "checkpoint": 10000
+  },
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "T_1500",
+    "constrained": true,
+    "C": 1500, "T": 1500, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 300000, "checkpoint": 10000
+  },
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "T_2000",
+    "constrained": true,
+    "C": 2000, "T": 2000, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 300000, "checkpoint": 10000
+  },
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "T_3000",
+    "constrained": true,
+    "C": 3000, "T": 3000, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 300000, "checkpoint": 10000
+  },
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "T_4000",
+    "constrained": true,
+    "C": 4000, "T": 4000, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 300000, "checkpoint": 10000
+  },
+  {
+    "env_name": "Acrobot-v1",
+    "out_dir": "T_6000",
+    "constrained": true,
+    "C": 6000, "T": 6000, "batch_size": 100,
+    "M": 5, "E": 10, "c": 0.1, "tau": 40, "c2": 2,
+    "epsilon": 0.2, "num_steps": 300000, "checkpoint": 10000
+  }
+]
